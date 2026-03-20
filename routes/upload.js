@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const cloudinary = require("cloudinary").v2;
 
+router.use(express.raw({ type: "image/*", limit: "20mb" }));
+
 // configuración
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -14,29 +16,20 @@ cloudinary.config({
 //
 router.post("/", async (req, res) => {
   try {
-    const { foto, name } = req.body;
+    const name = req.headers["x-filename"];
+    const buffer = req.body; // 👈 aquí está la imagen como Buffer
 
-    if (!foto || !name) {
+    if (!buffer || !name) {
       return res.status(400).json({ error: "Datos incompletos" });
     }
 
-    // validar base64 tipo imagen
-    const match = foto.match(/^data:image\/(\w+);base64,/);
-    if (!match) {
-      return res.status(400).json({ error: "Formato inválido" });
-    }
-
-    const ext = match[1].toLowerCase();
-
-    if (!["jpg", "jpeg", "png", "webp"].includes(ext)) {
-      return res.status(400).json({ error: "Tipo no permitido" });
-    }
-
-    // subir a cloudinary
-    const result = await cloudinary.uploader.upload(foto, {
-      folder: "incidencias",
-      public_id: name, // opcional
-      overwrite: true,
+    // subir a Cloudinary usando upload_stream
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "incidencias", public_id: name, overwrite: true },
+        (err, result) => (err ? reject(err) : resolve(result)),
+      );
+      stream.end(buffer);
     });
 
     return res.json({
@@ -44,7 +37,7 @@ router.post("/", async (req, res) => {
       url: result.secure_url,
     });
   } catch (error) {
-    console.error(error);
+    console.error(error); // esto mostrará el error real
     res.status(500).json({ error: "Error subiendo imagen" });
   }
 });
