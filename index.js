@@ -4,12 +4,14 @@ const cors = require("cors");
 const db = require("./db");
 
 const incidenciasRoutes = require("./routes/incidencias");
+const uploadRoutes = require("./routes/upload");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 app.use("/incidencias", incidenciasRoutes);
+app.use("/upload", uploadRoutes);
 
 // TEST
 app.get("/", (req, res) => {
