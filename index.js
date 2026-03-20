@@ -3,9 +3,13 @@ const express = require("express");
 const cors = require("cors");
 const db = require("./db");
 
+const incidenciasRoutes = require("./routes/incidencias");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use("/incidencias", incidenciasRoutes);
 
 // TEST
 app.get("/", (req, res) => {
